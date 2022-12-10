@@ -21,18 +21,33 @@ export default class Utils {
         return array;
     }
 
+
+    // make deep copy
     static nestedCopy(array) {
         return JSON.parse(JSON.stringify(array));
     }
 
-    static getHighestValueObject(array) {
+    // return obj with the highest value, or given field
+    static getHighestValueObject(array, field = null) {
         let highestValueObject = {};
 
-        array.forEach(move => {
-            if (!highestValueObject.value || move.value > highestValueObject.value) {
-                highestValueObject = move;
-            }
-        });
+        if (field) {
+            array.forEach(move => {
+                if (!highestValueObject[field] || move[field] > highestValueObject[field]) {
+                    highestValueObject = move;
+                }
+            });
+        } else {
+            array.forEach(move => {
+                if (!highestValueObject.value || move.value > highestValueObject.value) {
+                    highestValueObject = move;
+                }
+            });
+        }
+
+        // if (highestValueObject.netScore) {
+        //     console.log('high score is:', highestValueObject.netScore);
+        // }
 
         return highestValueObject;
     }

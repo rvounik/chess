@@ -15,9 +15,9 @@ import Pieces from './components/pieces/index.js'
 // globals
 const context = document.getElementById('canvas').getContext('2d');
 const state = {
-    turn: Sides.BLACK, // whose turn is it?
-    computerSide: Sides.BLACK, // what color does computer play with?
-    demo: true, // computer plays both sides?
+    turn: Sides.WHITE, // whose turn is it?
+    computerSide: Sides.WHITE, // what color does computer play with?
+    demo: false, // computer plays both sides?
     bestMove: {
         piece: null,
         score: 0,
@@ -31,8 +31,8 @@ const state = {
     endTimer: 0,
     initialMapData: BoardSetup,
     initialPiecesConfig: PiecesSetup,
-    depth: 3,
-    debug: false
+    debug: true,
+    iterations: 10
 };
 
 let pieces = Helpers.Utils.nestedCopy(state.initialPiecesConfig);
@@ -74,10 +74,21 @@ const drawPiece = (pieceId, coordinates) => {
     context.restore();
 }
 
-const updateMapWithMoveForSide = (givenMap, move, side, pieces) => {
+/**
+ * updateMapWithMoveForSide
+ * iterates over pieces belonging to given side and fetch all possible moves and their values
+ * @param {Array} givenMap - the map on which to play the move
+ * @param {Object} move - the move to make
+ * @param {string} side - the side for which move should be played
+ * @param {array} pieces - the pieces
+ * @param {boolean} test - run in test mode (dont run side effects)
+ * @returns {array} - the best move for each owned piece
+ * */
+const updateMapWithMoveForSide = (givenMap, move, side, pieces, test) => {
 
     // make a copy of map and return it, updated
-    const map = Object.assign([], givenMap);
+    // const map = Object.assign([], givenMap);
+    const map = Helpers.Utils.nestedCopy(givenMap);
     const newPos = {};
     const oldPos = {};
     const piece = pieces.filter(pieceConfig => pieceConfig.id === move.pieceId)[0];
@@ -102,7 +113,7 @@ const updateMapWithMoveForSide = (givenMap, move, side, pieces) => {
 
                 // instead of getting the value from the move, which could be anything, find the piece currently
                 // at the new position and get its value to add to the score of the playing side
-                if (map[a][b] !== 0) {
+                if (!test && map[a][b] !== 0) {
                     const capturedPieceId = map[a][b];
                     const capturedPiece = pieces.filter(pieceConfig => pieceConfig.id === capturedPieceId)[0];
                     state.scores[side] += capturedPiece.value;
@@ -110,7 +121,8 @@ const updateMapWithMoveForSide = (givenMap, move, side, pieces) => {
                     if (state.debug) {
                         console.log(side, piece.type, 'captured', capturedPiece.side, capturedPiece.type, 'for', capturedPiece.value, 'points');
                     }
-                    if (capturedPiece.type === PieceTypes.KING) {
+
+                    if (!test && capturedPiece.type === PieceTypes.KING) {
                         if (state.debug) {
                             console.log('king captured, game ended',state.scores);
                         }
@@ -125,18 +137,21 @@ const updateMapWithMoveForSide = (givenMap, move, side, pieces) => {
         }
     }
 
-    // turn pawn into queen if applicable
-    if (piece.type === PieceTypes.PAWN && (newPos.x === 0 || newPos.x === 7)) {
-        if (state.debug) {
-            console.log('transform pawn into queen');
-        }
-        piece.type = PieceTypes.QUEEN;
-        piece.value = PieceValues.QUEEN;
-    }
+    if (!test) {
 
-    if (state.status === 'game') {
-        if (state.debug) {
-            console.log(side, 'moved', piece.type, 'from', oldPos, 'to', newPos);
+        // turn pawn into queen if applicable
+        if (piece.type === PieceTypes.PAWN && (newPos.x === 0 || newPos.x === 7)) {
+            if (state.debug) {
+                console.log('transform pawn into queen');
+            }
+            piece.type = PieceTypes.QUEEN;
+            piece.value = PieceValues.QUEEN;
+        }
+
+        if (state.status === 'game') {
+            if (state.debug) {
+                console.log(side, 'moved', piece.type, 'from', oldPos, 'to', newPos, 'for:',move.netScore);
+            }
         }
     }
 
@@ -151,6 +166,7 @@ const switchTurn = () => {
     state.turn = getOppositeSideId(state.turn);
 }
 
+// todo: bring back checkmate check if the depth logic wont solve that already
 // check if on given map, the king of given side is checkmate at given position
 // this function doesnt care if king landed on another piece, or about value etc.
 // const checkMate = (map, side, move) => {
@@ -202,20 +218,51 @@ const getPieceMoves = (piece, map, side, position, pieceId, pieces) => {
     return moves;
 };
 
+const getNetScore = (move, side, map) => {
+    let copyOfMap = Helpers.Utils.nestedCopy(map);
+    let score = 0;
+    let innerDepth = state.iterations; // see the net score after x moves
+    let copyOfMove = Object.assign({} , move);
+    let localSide = side;
+
+    while (innerDepth > 0) {
+
+        console.log('testing round:',innerDepth);
+
+        const playerMove = copyOfMove || getBestMove(copyOfMap, localSide, true);
+        copyOfMap = updateMapWithMoveForSide(copyOfMap, playerMove, localSide, pieces, true);
+        score += playerMove.value;
+        copyOfMove = null; // reset original moves: from now on calculate new ones
+
+        // console.log('player move:');
+        // console.log(copyOfMap);
+
+        localSide = getOppositeSideId(localSide);
+
+        const opponentMove = getBestMove(copyOfMap, localSide, true);
+        copyOfMap = updateMapWithMoveForSide(copyOfMap, opponentMove, localSide, pieces, true);
+        score -= opponentMove.value;
+
+        // console.log('opponent move:');
+        // console.log(copyOfMap);
+
+        localSide = getOppositeSideId(localSide);
+
+        innerDepth--;
+    }
+
+    return score;
+}
+
 /**
  * getBestMovesForEachPiece
  * iterates over pieces belonging to given side and fetch all possible moves and their values
  * @param {Array} map - the current state of the chessboard
  * @param {string} side - the side for which moves should be returned
+ * @param {boolean} test - test mode
  * @returns {array} - the best move for each owned piece
  * */
-const getBestMovesForEachPiece = (map, side) => {
-
-    /* ah, yes. now I get it. by definition, 'best moves for each piece' already implies it was tested multiple times
-    using my <depth> logic thingie.
-     */
-
-
+const getBestMovesForEachPiece = (map, side, test) => {
     let bestMovesPerPiece = [];
 
     // loop over each piece in given map
@@ -233,62 +280,20 @@ const getBestMovesForEachPiece = (map, side) => {
                     // get all possible moves for this piece
                     const moves = getPieceMoves(piece, map, side, { x: b, y: a }, pieceId, pieces);
 
-                    // moves.forEach(move => {
-                    //     let playerMove, oppositeMove;
-                    //     let scoreCopy = state.scores[side];
-                    //     const mapCopy = Object.assign([], map);
-                    //     updateMapWithMoveForSide(mapCopy, move, state.turn, pieces);
-                    //     scoreCopy += move.value
-                    //     const oppositeMove = getBestMove(mapCopy, getOppositeSideId(side), state.depth--);
-                    //     updateMapWithMoveForSide(mapCopy, oppositeMove, getOppositeSideId(side), pieces);
-                    //     scoreCopy -= oppositeMove.value;
-                    //     const playerMove = getBestMove(mapCopy, getOppositeSideId(side), state.depth--);
-                    //     updateMapWithMoveForSide(mapCopy, oppositeMove, getOppositeSideId(side), pieces);
-                    //     scoreCopy -= oppositeMove.value;
-                    //
-                    //
-                    //
-                    //     if (state.depth > 0) {
-                    //         const oppositeMoves = getBestMove(mapCopy, getOppositeSideId(side), state.depth--);
-                    //     } else {
-                    //         console.log('depth exhausted, we now have the nett score over < depth > moves. add it to move and move on.')
-                    //     }
-                    // }
-                    //
+                    // each of the moves is valid and has a direct score, but we need the net score after x moves
+                    if (!test) {
+                        console.log('currently testing',side,piece.type, ', there are',moves.length,'move(s) possible. lets test possible outcome after',state.iterations,'moves.')
 
-                    // // for each of those moves:
-                    // moves.forEach(move => {
-                    //
-                    //     //make a copy of score:
-                    //     let scoreCopy = state.scores[side];
-                    //
-                    //     // make copy of map: mapCopy:
-                    //     const mapCopy = Object.assign([], map);
-                    //
-                    //     // apply the move to mapCopy:
-                    //     updateMapWithMoveForSide(mapCopy, move, state.turn, pieces);
-                    //
-                    //     // update your score:
-                    //     scoreCopy += move.value
-                    //
-                    //     // call getBestMove for the opposite side with the updated map: getBestMove(mapCopy, getOppositeSideId(side));
-                    //     // but... if we dont do something there it will run into infinite loop
-                    //     // to fix this we add a parameter that depletes on every call. how? well, call it like this:
-                    //     // (and simply reset that to <depth> every time it is your turn again)
-                    //     if (state.depth > 0) {
-                    //         const oppositeMoves = getBestMove(mapCopy, getOppositeSideId(side), state.depth--);
-                    //     } else {
-                    //         console.log('depth exhausted, now what? just take the highest valued move?')
-                    //     }
-                    // });
-
-
-
-
-
+                        moves.forEach(m => {
+                            m.netScore = getNetScore(m, side, map);
+                            console.log('completed assertion phase. added net score of ', m.netScore)
+                        });
+                    }
 
                     // without doing anything else yet, push the one with the highest value to the array
-                    const bestMoveForThisPiece = Helpers.Utils.getHighestValueObject(moves);
+                    const bestMoveForThisPiece = test
+                        ? Helpers.Utils.getHighestValueObject(moves)
+                        : Helpers.Utils.getHighestValueObject(moves, 'netScore');
 
                     // if the move exists (since pieces can be obstructed) add it to moves array
                     if (Object.keys(bestMoveForThisPiece).length) {
@@ -309,40 +314,23 @@ const getBestMovesForEachPiece = (map, side) => {
  * fetches collection of moves per piece, then returns the one with the highest net value
  * @param {Array} map - the current state of the chessboard
  * @param {string} side - the side for which moves should be returned
- * @param {Number} iteration - counter for iteration loop
  * @returns {Object} - the best move possible given the conditions
  * */
-const getBestMove = (map, side, iteration ) => {
-    const moves = getBestMovesForEachPiece(map, side, true);
+const getBestMove = (map, side, test = false) => {
+    const moves = getBestMovesForEachPiece(map, side, test);
 
-    return Helpers.Utils.getHighestValueObject(moves);
+    return Helpers.Utils.getHighestValueObject(moves, 'netScore'); // todo: probably should check netScore instead of score
 }
 
 const moveComputerPiece = () => {
     const move = getBestMove(mapData, state.turn);
-
-    // todo: the below idea looks good, but its not. it should be doing this for EVERY move, not just the best ones.
-
-    // make copy of map eg. copyOfMap
-    // make copy of score eg. copyOfScore
-
-    // get the best move for your side eg. getBestMove(copyOfMap, state.turn);
-    // do the move on copy of map (confirm the original is untouched!) eg updateMapWithMoveForSide(copyOfMap, move, state.turn, pieces)
-    // update your score: copyOfScore += move.value
-    // get the move for the opposite side: const opponentMove = getBestMove(copyOfMap, getOppositeTurnId(state.turn))
-    // deduct from your score: copyOfScore -= opponentMove.value;
-    // do the move on copy of map eg. updateMapWithMoveForSide(copyOfMap, opponentMove, getOppositeTurnId(state.turn), pieces)
-    // repeat this block <depth> times
-
 
     if (!Object.keys(move).length) {
         console.log('cant do any move, checkmate?')
         return state.status = 'end';
     }
 
-    if (Object.keys(move).length) {
-        mapData = updateMapWithMoveForSide(mapData, move, state.turn, pieces);
-    }
+    mapData = updateMapWithMoveForSide(mapData, move, state.turn, pieces, false);
 
     switchTurn();
 }
@@ -377,7 +365,6 @@ const update = () => {
         }
     } else {
         if (state.turn === state.computerSide || state.demo) {
-            state.depth = 3;
             moveComputerPiece();
         }
     }
