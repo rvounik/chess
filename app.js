@@ -21,7 +21,8 @@ const state = {
     bestMove: {
         piece: null,
         score: 0,
-        move: null
+        move: null,
+        netScore: 0
     },
     scores: {
         'white': 0,
@@ -32,7 +33,8 @@ const state = {
     initialMapData: BoardSetup,
     initialPiecesConfig: PiecesSetup,
     debug: true,
-    iterations: 10
+    rounds: 10, // how many rounds to play in testing phase (player + opponent move is 1 round)
+    depth: 3 // how many levels deep should each move in the round be tested
 };
 
 let pieces = Helpers.Utils.nestedCopy(state.initialPiecesConfig);
@@ -218,16 +220,17 @@ const getPieceMoves = (piece, map, side, position, pieceId, pieces) => {
     return moves;
 };
 
+// todo: getTotalScore or getProbableScore or getAssertedScore or getPredictedScore or getAmendedScore.. all much better
 const getNetScore = (move, side, map) => {
     let copyOfMap = Helpers.Utils.nestedCopy(map);
     let score = 0;
-    let innerDepth = state.iterations; // see the net score after x moves
+    let round = state.rounds; // see the net score after x moves
     let copyOfMove = Object.assign({} , move);
     let localSide = side;
 
-    while (innerDepth > 0) {
+    while (round > 0) {
 
-        console.log('testing round:',innerDepth);
+        console.log('testing round:',round);
 
         const playerMove = copyOfMove || getBestMove(copyOfMap, localSide, true);
         copyOfMap = updateMapWithMoveForSide(copyOfMap, playerMove, localSide, pieces, true);
@@ -248,7 +251,7 @@ const getNetScore = (move, side, map) => {
 
         localSide = getOppositeSideId(localSide);
 
-        innerDepth--;
+        round--;
     }
 
     return score;
@@ -282,11 +285,11 @@ const getBestMovesForEachPiece = (map, side, test) => {
 
                     // each of the moves is valid and has a direct score, but we need the net score after x moves
                     if (!test) {
-                        console.log('currently testing',side,piece.type, ', there are',moves.length,'move(s) possible. lets test possible outcome after',state.iterations,'moves.')
+                        console.log('currently testing',side,piece.type, ', there are',moves.length,'move(s) possible. lets test possible outcome after',state.rounds,'rounds.')
 
                         moves.forEach(m => {
                             m.netScore = getNetScore(m, side, map);
-                            console.log('completed assertion phase. added net score of ', m.netScore)
+                            console.log('assertion phase completed with a total score of ', m.netScore)
                         });
                     }
 
@@ -314,12 +317,13 @@ const getBestMovesForEachPiece = (map, side, test) => {
  * fetches collection of moves per piece, then returns the one with the highest net value
  * @param {Array} map - the current state of the chessboard
  * @param {string} side - the side for which moves should be returned
+ * @param {boolean} test - test mode or not
  * @returns {Object} - the best move possible given the conditions
  * */
 const getBestMove = (map, side, test = false) => {
     const moves = getBestMovesForEachPiece(map, side, test);
 
-    return Helpers.Utils.getHighestValueObject(moves, 'netScore'); // todo: probably should check netScore instead of score
+    return Helpers.Utils.getHighestValueObject(moves, 'netScore');
 }
 
 const moveComputerPiece = () => {
