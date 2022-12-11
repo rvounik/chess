@@ -26,7 +26,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x + 1, y: y + 1, value: y === 6 ? 50 : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ pieceId: pieceId, x: x + 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -37,7 +37,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x - 1, y: y + 1, value: y === 6 ? 50 : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ pieceId: pieceId, x: x - 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -60,7 +60,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x + 1, y: y - 1, value: y === 1 ? 50 : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ pieceId: pieceId, x: x + 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -71,7 +71,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x - 1, y: y - 1, value: y === 1 ? 50 : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ pieceId: pieceId, x: x - 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
