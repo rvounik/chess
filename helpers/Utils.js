@@ -52,4 +52,14 @@ export default class Utils {
         return highestValueObject;
     }
 
+    // sort by given key
+    static sortByKey(array, key) {
+        return array.sort(function(a, b) {
+            let x = a[key];
+            let y = b[key];
+
+            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+        });
+    }
+
 }

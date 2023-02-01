@@ -15,7 +15,7 @@ export default class Pawn {
             if (y < 7 && map[y + 1][x] === 0) {
 
                 // value increases when nearing opponents edge and is 50 when next move can turn into queen
-                moves.push({ pieceId: pieceId, x: x, y: y + 1, value: y === 6 ? 50 : y > 4 ? y : 0 });
+                moves.push({ side, pieceId: pieceId, x: x, y: y + 1, value: y === 6 ? 50 : y > 4 ? y : 0 });
             }
 
             // todo: add double when still at starting y
@@ -26,7 +26,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x + 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ side, pieceId: pieceId, x: x + 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -37,7 +37,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x - 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ side, pieceId: pieceId, x: x - 1, y: y + 1, value: y === 6 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -49,7 +49,7 @@ export default class Pawn {
             if (y > 0 && map[y - 1][x] === 0) {
 
                 // value increases when nearing opponents edge and is 50 when next move can turn into queen
-                moves.push({ pieceId: pieceId, x: x, y: y - 1, value: y === 1 ? 50 : y < 4 ? 7 - y : 0 });
+                moves.push({ side, pieceId: pieceId, x: x, y: y - 1, value: y === 1 ? 50 : y < 4 ? 7 - y : 0 });
             }
 
             // todo: add double when still at starting y
@@ -60,7 +60,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x + 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ side, pieceId: pieceId, x: x + 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }
@@ -71,7 +71,7 @@ export default class Pawn {
 
                 if (newFieldId !== 0) {
                     if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                        moves.push({ pieceId: pieceId, x: x - 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                        moves.push({ side, pieceId: pieceId, x: x - 1, y: y - 1, value: y === 1 ? 50 + Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                     }
                 }
             }

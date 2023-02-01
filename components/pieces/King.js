@@ -15,10 +15,10 @@ export default class King {
             if (newFieldId !== 0) {
                 // only add the move when the piece there is not from your side!
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x, y: y + 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x, y: y + 1, value: 0 });
             }
         }
 
@@ -28,10 +28,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x + 1, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x + 1, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x + 1, y: y + 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x + 1, y: y + 1, value: 0 });
             }
         }
 
@@ -41,10 +41,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x - 1, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x - 1, y: y + 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x - 1, y: y + 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x - 1, y: y + 1, value: 0 });
             }
         }
 
@@ -54,10 +54,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x, y: y - 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x, y: y - 1, value: 0 });
             }
         }
 
@@ -67,10 +67,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x + 1, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x + 1, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x + 1, y: y - 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x + 1, y: y - 1, value: 0 });
             }
         }
 
@@ -80,10 +80,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x - 1, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x - 1, y: y - 1, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x - 1, y: y - 1, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x - 1, y: y - 1, value: 0 });
             }
         }
 
@@ -93,10 +93,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x + 1, y: y, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x + 1, y: y, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x + 1, y: y, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x + 1, y: y, value: 0 });
             }
         }
 
@@ -106,10 +106,10 @@ export default class King {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({pieceId: pieceId, x: x - 1, y: y, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
+                    moves.push({ side, pieceId: pieceId, x: x - 1, y: y, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value});
                 }
             } else {
-                moves.push({ pieceId: pieceId, x: x - 1, y: y, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x - 1, y: y, value: 0 });
             }
         }
 

@@ -18,12 +18,12 @@ export default class Bishop {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({ pieceId: pieceId, x: x + addition, y: y + addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                    moves.push({ side, pieceId: pieceId, x: x + addition, y: y + addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                 }
 
                 break;
             } else {
-                moves.push({ pieceId: pieceId, x: x + addition, y: y + addition, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x + addition, y: y + addition, value: 0 });
             }
         }
 
@@ -38,12 +38,12 @@ export default class Bishop {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({ pieceId: pieceId, x: x - addition, y: y + addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                    moves.push({ side, pieceId: pieceId, x: x - addition, y: y + addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                 }
 
                 break;
             } else {
-                moves.push({ pieceId: pieceId, x: x - addition, y: y + addition, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x - addition, y: y + addition, value: 0 });
             }
         }
 
@@ -58,12 +58,12 @@ export default class Bishop {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({ pieceId: pieceId, x: x + addition, y: y - addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                    moves.push({ side, pieceId: pieceId, x: x + addition, y: y - addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                 }
 
                 break;
             } else {
-                moves.push({ pieceId: pieceId, x: x + addition, y: y - addition, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x + addition, y: y - addition, value: 0 });
             }
         }
 
@@ -78,12 +78,12 @@ export default class Bishop {
 
             if (newFieldId !== 0) {
                 if (Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-                    moves.push({ pieceId: pieceId, x: x - addition, y: y - addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
+                    moves.push({ side, pieceId: pieceId, x: x - addition, y: y - addition, value: Helpers.Pieces.getPieceConfig(newFieldId, pieces).value });
                 }
 
                 break;
             } else {
-                moves.push({ pieceId: pieceId, x: x - addition, y: y - addition, value: 0 });
+                moves.push({ side, pieceId: pieceId, x: x - addition, y: y - addition, value: 0 });
             }
         }
 

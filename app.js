@@ -27,19 +27,18 @@ const state = {
         netScore: 0
     },
     scores: {
-        'white': 0, // todo: figure out how to use constant here
-        'black': 0
+        [Sides.WHITE]: 0,
+        [Sides.BLACK]: 0
     },
     status: GameStates.TITLE,
     endTimer: 0,
-    startMap: SimplifiedSetup,
+    startMap: BoardSetup,
     startPieces: PiecesSetup,
     debug: true,
-    rounds: 10, // how many rounds to play in testing phase (player + opponent move is 1 round)
-    depth: 1000, // how many levels deep should each move in the round be tested
-    depthCounter: 0, // keeping track of depth position
+    debugEachRound: true,
     map: null,
-    pieces: null
+    pieces: null,
+    roundsPlayed: 0
 };
 
 const drawMapDataAsCheckerBoard = map => {
@@ -47,9 +46,9 @@ const drawMapDataAsCheckerBoard = map => {
     context.lineWidth = '1';
     let c = 0;
 
-    for (let a = 0; a < map.length; a++) {
-        for (let b = 0; b < map[a].length; b++) {
-            c++;
+    for (let a = 0; a < map.length; a ++) {
+        for (let b = 0; b < map[a].length; b ++) {
+            c ++;
             context.fillStyle = (c + a) % 2 ? '#999999' : '#ffffff';
             context.fillRect(b * 100, a * 100, 100, 100);
             if (map[a][b] !== 0) {
@@ -57,7 +56,7 @@ const drawMapDataAsCheckerBoard = map => {
             }
             context.font = "20px Arial";
             context.fillStyle = '#dddddd';
-            context.fillText(`${a}, ${b}`, b * 100 + 3, a * 100 + 20);
+            context.fillText(`${b}, ${a}`, b * 100 + 3, a * 100 + 20);
         }
     }
 }
@@ -66,7 +65,7 @@ const drawPiece = (pieceId, coordinates) => {
     const pieceConfig = Helpers.Pieces.getPieceConfig(pieceId, state.pieces);
 
     if (!pieceConfig) {
-        console.log('cant find piece with id ', pieceId)
+        throw new Error(`Error: cant find piece with id ${pieceId}`);
     }
 
     context.save();
@@ -112,50 +111,52 @@ const getPieceMoves = (piece, map, side, position, pieceId, pieces) => {
             break;
     }
 
-    // moves = Helpers.Utils.shuffle(moves);
-
     return moves;
 };
 
 // updates given pieces for when the given move is played out on given map (capture or transformation)
 const getPiecesForMove = (map, move, pieces) => {
-    // const newPieces = [];
-    // const givenPieces = Helpers.Utils.nestedCopy(pieces);
-    //
-    // const affectedPieceId = map[move.y][move.x];
-    //
-    // if (affectedPieceId) {
-    //     givenPieces.forEach(piece => {
-    //         if (piece.id !== affectedPieceId) {
-    //             newPieces.push(piece)
-    //         }
-    //     });
-    // }
-    // am actually not sure if pieces should be mutated. sure, the type of the piece can change but be careful
-    // it is only persisted within a single round, not across different moves!
-    // for now I play it safe and just return the original pieces
-    return pieces;
+    const newPieces = [];
+    const givenPieces = Helpers.Utils.nestedCopy(pieces);
+
+    const affectedPieceId = map[move.y][move.x];
+
+    givenPieces.forEach(piece => {
+        if (!affectedPieceId || affectedPieceId !== piece.id) {
+            newPieces.push(piece)
+        }
+    });
+
+    return newPieces;
 }
 
 // returns score for the given move made on given map for given pieces
-const getScoreForMove = (map, move, pieces) => {
+const getScoreForMove = (map, move, pieces, side) => {
     const newFieldId = map[move.y][move.x];
+
+    // todo: add check/mate check and increment/decrement the score accordingly
     return newFieldId !== 0 ? Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : 0;
+
+    if (newFieldId !== 0 && Helpers.Pieces.getPieceConfig(newFieldId, pieces).side === side) {
+        return Helpers.Pieces.getPieceConfig(newFieldId, pieces).value;
+    }
+    if (newFieldId !== 0 && Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
+        return 0 - Helpers.Pieces.getPieceConfig(newFieldId, pieces).value;
+    }
+    return 0;
 }
 
+// returns updated map for the given move
 const getMapForMove = (map, move) => {
     const updatedMap = Helpers.Utils.nestedCopy(map);
 
     if (!move) {
-        console.log('Error: invalid move provided');
-
-        return;
+        throw new Error('Error: invalid move provided');
     }
 
     // wipe the old position
-    // todo: instead of this expensive lookup, simply store the old x,y in each piece' getMoves method
-    for (let a = 0; a < updatedMap.length; a++) {
-        for (let b = 0; b < updatedMap[a].length; b++) {
+    for (let a = 0; a < updatedMap.length; a ++) {
+        for (let b = 0; b < updatedMap[a].length; b ++) {
             if (updatedMap[a][b] !== 0 && updatedMap[a][b] === move.pieceId) {
                 updatedMap[a][b] = 0;
             }
@@ -171,8 +172,8 @@ const getMapForMove = (map, move) => {
 const getValidMoves = (side, map, pieces) => {
     const validMoves = [];
 
-    for (let a = 0; a < map.length; a++) {
-        for (let b = 0; b < map[a].length; b++) {
+    for (let a = 0; a < map.length; a ++) {
+        for (let b = 0; b < map[a].length; b ++) {
             if (map[a][b] !== 0) {
                 const pieceId = map[a][b];
                 const piece = pieces.filter(pieceConfig => pieceConfig.id === pieceId)[0];
@@ -187,70 +188,84 @@ const getValidMoves = (side, map, pieces) => {
     return validMoves;
 }
 
-const getBestMove = (side, map, pieces, simulating = false) => {
-   const validMoves = getValidMoves(side, map, pieces);
+const getMax = (arr, field) => {
+    return arr.reduce(function(prev, current) {
+        return (prev[field] > current[field]) ? prev : current
+    })
+}
 
-   if (!simulating) {
-       state.depthCounter = state.depth; // set the depth counter once
-   }
+const getBestMove = (side, map, pieces) => {
+    let movesAndResponses = [];
 
-   state.depthCounter--;
+    // get the playing side moves
+    const validMoves = getValidMoves(side, map, pieces);
 
-   if (state.depthCounter < 1) {
-       return;
-   }
-
+    // now iterate over the moves and amend them with the entities
     validMoves.forEach(move => {
-        let nextMap = Helpers.Utils.nestedCopy(map);
-        let nextPieces = Helpers.Utils.nestedCopy(pieces);
-        let nextScore = 0;
-        let nextMove;
-        let nextSide = side;
-        let currentRound = 0;
-        const maxRounds = state.rounds;
+        const nextMap = getMapForMove(map, move);
+        const nextPieces = getPiecesForMove(map, move, pieces);
 
-        // handle "own" move first (since it differs a bit from how this is done inside the loop)
-        nextMove = move;
-        nextScore+= getScoreForMove(nextMap, nextMove, nextPieces);
-        nextMap = getMapForMove(nextMap, nextMove);
-        nextPieces = getPiecesForMove(nextMap, nextMove, nextPieces);
+        // lets calculate one level deep of responses (opponent moves)
+        const nextResponses = getValidMoves(getOppositeSideId(move.side), nextMap, nextPieces);
+        const responses1 = [];
 
-        while (currentRound < maxRounds) {
-            currentRound ++;
-            nextSide = getOppositeSideId(nextSide);
-            nextMove = getBestMove(nextSide, nextMap, nextPieces, true);
+        nextResponses.forEach(response => {
+            let r1map = getMapForMove(nextMap, response);
+            let r1pieces = getPiecesForMove(nextMap, response, nextPieces);
 
-            if (!nextMove) {
-                break; // break because exhausted depth
-            }
+            // amend each response with updated assets to pass on to deeper levels
+            responses1.push({
+                pieceId: response.pieceId,
+                x: response.x,
+                y: response.y,
+                score: response.value,
+                totalScore: move.value - response.value,
+                side: getOppositeSideId(side),
+                map: r1map,
+                pieces: r1pieces,
+                responses: []
+            })
+        });
 
-            nextScore += getScoreForMove(nextMap, nextMove, nextPieces);
-            nextMap = getMapForMove(nextMap, nextMove);
-            nextPieces = getPiecesForMove(nextMap, nextMove, nextPieces);
-        }
-
-        if (!simulating) {
-            move.totalScore = nextScore;
-        }
+        // amend each move with updated assets to pass on to deeper levels
+        movesAndResponses.push({
+            pieceId: move.pieceId,
+            x: move.x,
+            y: move.y,
+            score: move.value,
+            totalScore: move.value,
+            side: side,
+            map: nextMap,
+            pieces: nextPieces,
+            responses: responses1
+        });
     });
 
-    if (!simulating) {
-        return Helpers.Utils.getHighestValueObject(validMoves, 'totalScore')
-    }
+    // todo: this is required since we dont go deep enough. later this can be removed:
+    // movesAndResponses = Helpers.Utils.shuffle(movesAndResponses);
 
-    return validMoves[0];
+    // (for now assume we go just one level deep. later figure out how to go (n) depth levels deep dynamically)
+    movesAndResponses.forEach(move => {
+
+        // assume the opponent makes the best possible move, therefore extract the highest response from the move score
+        move.netScore = move.score - getMax(move.responses,'score').score;
+    });
+
+    return getMax(movesAndResponses, 'netScore')
 }
 
 const moveComputerPiece = () => {
-
     const move = getBestMove(state.side, state.map, state.pieces);
+
+    // update map
     state.map = getMapForMove(state.map, move);
 
-    // todo: check for check/mate?
-    // todo: update score somewhere now that the move is actually made
+    if (state.debugEachRound) {
+        state.status = GameStates.PAUSE;
+        console.log( state.side,'wants to play',move);
+    }
 
-    // end the game for now to study a single move
-    state.status = GameStates.END;
+    state.roundsPlayed ++;
 
     switchTurn();
 }
@@ -279,6 +294,10 @@ const update = () => {
         }
     }
 
+    if (state.status === GameStates.PAUSE) {
+
+    }
+
     if (state.status === GameStates.END) {
         state.endTimer ++;
 
@@ -286,8 +305,8 @@ const update = () => {
 
             // reset scores
             state.scores = {
-                'black': 0,
-                'white': 0
+                [Sides.BLACK]: 0,
+                [Sides.WHITE]: 0
             }
 
             // reset pieces (because pawns that turned into queens) and map
@@ -299,17 +318,20 @@ const update = () => {
             // small pause before restarting
             if (state.endTimer > 250) {
                 state.endTimer = 0;
+                state.roundsPlayed = 0;
                 state.status = GameStates.TITLE;
             }
         }
     }
-
-    // Helpers.Canvas.clearCanvas(context, '#ffffff');
 
     requestAnimationFrame(() => {
         update();
     });
 };
 
-// call the updater
+// call the updater once
 update();
+
+document.querySelector('#nextButton').addEventListener("click", () => {
+    state.status = GameStates.GAME;
+}, false);
