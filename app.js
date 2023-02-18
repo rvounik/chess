@@ -32,14 +32,17 @@ const state = {
     },
     status: GameStates.TITLE,
     endTimer: 0,
-    startMap: BoardSetup,
+    startMap: BoardSetup, // SimplifiedSetup
     startPieces: PiecesSetup,
     debug: true,
-    debugEachRound: true,
+    debugEachRound: false, // if true, use 'next' button to make the next move
     map: null,
     pieces: null,
     roundsPlayed: 0
 };
+
+
+!state.debugEachRound ? document.querySelector('#nextButton').classList.add('hidden') : '';
 
 const drawMapDataAsCheckerBoard = map => {
     context.strokeStyle = '#000000';
@@ -130,22 +133,6 @@ const getPiecesForMove = (map, move, pieces) => {
     return newPieces;
 }
 
-// returns score for the given move made on given map for given pieces
-const getScoreForMove = (map, move, pieces, side) => {
-    const newFieldId = map[move.y][move.x];
-
-    // todo: add check/mate check and increment/decrement the score accordingly
-    return newFieldId !== 0 ? Helpers.Pieces.getPieceConfig(newFieldId, pieces).value : 0;
-
-    if (newFieldId !== 0 && Helpers.Pieces.getPieceConfig(newFieldId, pieces).side === side) {
-        return Helpers.Pieces.getPieceConfig(newFieldId, pieces).value;
-    }
-    if (newFieldId !== 0 && Helpers.Pieces.getPieceConfig(newFieldId, pieces).side !== side) {
-        return 0 - Helpers.Pieces.getPieceConfig(newFieldId, pieces).value;
-    }
-    return 0;
-}
-
 // returns updated map for the given move
 const getMapForMove = (map, move) => {
     const updatedMap = Helpers.Utils.nestedCopy(map);
@@ -195,54 +182,65 @@ const getMax = (arr, field) => {
 }
 
 const getBestMove = (side, map, pieces) => {
+
+    // amends given moves, comes up with responses, adds them to given array, returns them. basically it plays a single round (better name?)
+    const amendAndPushGivenMovesToGivenArray = (moves, arr) => {
+
+        // now iterate over the moves and amend them with the entities
+        moves.forEach(move => {
+            let nextMap = getMapForMove(map, move);
+            let nextPieces = getPiecesForMove(map, move, pieces);
+
+            // lets calculate one level deep of responses (opponent moves)
+            let nextResponses = getValidMoves(getOppositeSideId(move.side), nextMap, nextPieces);
+            let responses1 = [];
+
+            nextResponses.forEach(response => {
+                let r1map = getMapForMove(nextMap, response);
+                let r1pieces = getPiecesForMove(nextMap, response, nextPieces);
+
+                // amend each response with updated assets to pass on to deeper levels
+                responses1.push({
+                    pieceId: response.pieceId,
+                    x: response.x,
+                    y: response.y,
+                    score: response.value,
+                    totalScore: move.value - response.value,
+                    side: getOppositeSideId(side),
+                    map: r1map,
+                    pieces: r1pieces,
+                    responses: []
+                })
+            });
+
+            // amend each move with updated assets to pass on to deeper levels
+            arr.push({
+                pieceId: move.pieceId,
+                x: move.x,
+                y: move.y,
+                score: move.value,
+                totalScore: move.value,
+                side: side,
+                map: nextMap,
+                pieces: nextPieces,
+                responses: responses1
+            });
+        });
+
+        return arr;
+    }
+
+    // will hold EVERYTHING
     let movesAndResponses = [];
 
     // get the playing side moves
-    const validMoves = getValidMoves(side, map, pieces);
+    let validMoves = getValidMoves(side, map, pieces);
 
-    // now iterate over the moves and amend them with the entities
-    validMoves.forEach(move => {
-        const nextMap = getMapForMove(map, move);
-        const nextPieces = getPiecesForMove(map, move, pieces);
-
-        // lets calculate one level deep of responses (opponent moves)
-        const nextResponses = getValidMoves(getOppositeSideId(move.side), nextMap, nextPieces);
-        const responses1 = [];
-
-        nextResponses.forEach(response => {
-            let r1map = getMapForMove(nextMap, response);
-            let r1pieces = getPiecesForMove(nextMap, response, nextPieces);
-
-            // amend each response with updated assets to pass on to deeper levels
-            responses1.push({
-                pieceId: response.pieceId,
-                x: response.x,
-                y: response.y,
-                score: response.value,
-                totalScore: move.value - response.value,
-                side: getOppositeSideId(side),
-                map: r1map,
-                pieces: r1pieces,
-                responses: []
-            })
-        });
-
-        // amend each move with updated assets to pass on to deeper levels
-        movesAndResponses.push({
-            pieceId: move.pieceId,
-            x: move.x,
-            y: move.y,
-            score: move.value,
-            totalScore: move.value,
-            side: side,
-            map: nextMap,
-            pieces: nextPieces,
-            responses: responses1
-        });
-    });
+    // amend the collection with new moves and their responses
+    movesAndResponses = amendAndPushGivenMovesToGivenArray(validMoves, movesAndResponses);
 
     // todo: this is required since we dont go deep enough. later this can be removed:
-    // movesAndResponses = Helpers.Utils.shuffle(movesAndResponses);
+    movesAndResponses = Helpers.Utils.shuffle(movesAndResponses);
 
     // (for now assume we go just one level deep. later figure out how to go (n) depth levels deep dynamically)
     movesAndResponses.forEach(move => {
@@ -250,6 +248,28 @@ const getBestMove = (side, map, pieces) => {
         // assume the opponent makes the best possible move, therefore extract the highest response from the move score
         move.netScore = move.score - getMax(move.responses,'score').score;
     });
+
+    // ideally, you want a mechanism that looks at the score over the whole sequence, so sacrifices can be made,
+    // but otoh before capturing a piece, the side effects are taken into account as well (eg capture pawn, lose knight)
+    // const result = [
+    //     {
+    //         // ... move 0
+    //         sequences: [
+    //                          // r1 r2 r3 r4 r5
+    //             { responseIds: [0, 0, 0, 0, 0], totalScore: 540 },
+    //             { responseIds: [0, 0, 0, 0, 1], totalScore: 590 },
+    //         ]
+    //     },
+    //     {
+    //         // ... move 1
+    //         sequences: [
+    //                          // r1 r2 r3 r4 r5
+    //             { responseIds: [0, 0, 0, 0, 0], totalScore: 540 },
+    //             { responseIds: [0, 0, 0, 0, 1], totalScore: 590 },
+    //         ]
+    //     },
+    //     // ...
+    // ]
 
     return getMax(movesAndResponses, 'netScore')
 }
@@ -262,7 +282,8 @@ const moveComputerPiece = () => {
 
     if (state.debugEachRound) {
         state.status = GameStates.PAUSE;
-        console.log( state.side,'wants to play',move);
+
+        // console.log( state.side,'wants to play',move);
     }
 
     state.roundsPlayed ++;

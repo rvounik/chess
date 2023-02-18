@@ -11,11 +11,12 @@
         body {
             font-size: 16px;
             background: #333;
+            text-align: center;
         }
 
         canvas {
             display: block;
-            margin: 100px auto;
+            margin: 1rem auto;
 
             image-rendering: optimizeSpeed;             /* Older versions of FF          */
             image-rendering: -moz-crisp-edges;          /* FF 6.0+                       */
@@ -24,11 +25,27 @@
             image-rendering: pixelated;                 /* Awesome future-browsers       */
             -ms-interpolation-mode: nearest-neighbor;   /* IE                            */
         }
+
+        #nextButton {
+            background: red;
+            color: white;
+            padding: .5rem 1rem;
+            border: 0;
+            border-radius: .25rem;
+        }
+
+        #nextButton:hover {
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
 <canvas id="canvas" width="800" height="800">Your browser does not support Canvas</canvas>
-<button id="nextButton">next</button>
+<button id="nextButton">NEXT MOVE</button>
 <script type="module" src="./app.js"></script><!-- you need type="module" to be able to use import statements inside included js -->
 </body>
 </html>
